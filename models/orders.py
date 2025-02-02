@@ -18,6 +18,9 @@ class Order(Base):
     # Relazione con OrderDetails
     order_details = relationship("OrderDetails", back_populates="order", cascade="all, delete-orphan")
 
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
+
     def __repr__(self):
         return f"<Order(id={self.id}, user_id={self.user_id}, status={self.status}, created_at={self.created_at})>"
 
@@ -33,6 +36,9 @@ class OrderDetails(Base):
     # Relazioni
     order = relationship("Order", back_populates="order_details")
     product = relationship("Product")
+
+    def to_dict(self):
+        return {column.name: getattr(self, column.name) for column in self.__table__.columns}
 
     def __repr__(self):
         return f"<OrderDetails(id={self.id}, order_id={self.order_id}, product_id={self.product_id}, quantity={self.quantity}, price={self.price})>"

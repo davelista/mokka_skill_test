@@ -17,6 +17,8 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow)
 
+    orders = relationship("Order", back_populates="user", cascade="all, delete-orphan")
+
     def set_password(self, password):
         salt = bcrypt.gensalt()  # Generate a salt
         self.password = bcrypt.hashpw(password.encode('utf-8'), salt)  # Hash password

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from models.db_manager import SessionLocal
 from models.users import User
+from routes.auth_routes import check_admin
 
 users_bp = Blueprint("users", __name__)
 
@@ -18,12 +19,12 @@ def add_user():
     session = SessionLocal()
 
     try:
-        data = request.get_json()
-        current_user_email = get_jwt_identity()
-        current_user = session.query(User).filter_by(email=current_user_email).first()
 
-        if not current_user or not current_user.is_admin:
-            return jsonify({"error": "Access deny. Only admin can create users."}), 403
+        is_admin = check_admin()
+        if isinstance(is_admin, tuple):
+            return is_admin
+
+        data = request.get_json()
 
         required_fields = ["email", "username", "firstname", "lastname", "password"]
         for field in required_fields:
@@ -44,7 +45,7 @@ def add_user():
         return jsonify({"message": "User added"}), 201
 
     except Exception as e:
-        session.rollback()  # Annulla le modifiche in caso di errore
+        session.rollback()  # Undo changes in case of error
         return jsonify({"error": str(e)}), 500
     finally:
         session.close()
@@ -55,22 +56,21 @@ def add_user():
 def modify_user(user_id):
     session = SessionLocal()
     try:
+
+        is_admin = check_admin()
+        if isinstance(is_admin, tuple):
+            return is_admin
+
         data = request.get_json()
 
         if not data:
-            return jsonify({"error": "No data provided"}), 400  # Se il corpo della richiesta è vuoto
-
-        current_user_email = get_jwt_identity()
-        current_user = session.query(User).filter_by(email=current_user_email).first()
-
-        if not current_user or not current_user.is_admin:
-            return jsonify({"error": "Access denied. Only admins can modify users."}), 403
+            return jsonify({"error": "No data provided"}), 400  # If body is empty
 
         user = session.query(User).filter_by(id=user_id).first()
         if not user:
             return jsonify({"error": "User not found"}), 404
 
-        # Aggiorna solo i campi forniti
+        # Update only selected fields
         user.firstname = data.get("firstname", user.firstname)
         user.lastname = data.get("lastname", user.lastname)
         user.username = data.get("username", user.username)
@@ -81,7 +81,7 @@ def modify_user(user_id):
         return jsonify({"message": "User updated successfully"}), 200
 
     except Exception as e:
-        session.rollback()  # Annulla le modifiche in caso di errore
+        session.rollback()  # Undo changes in case of error
         return jsonify({"error": str(e)}), 500
 
     finally:
@@ -112,7 +112,7 @@ def delete_user(user_id):
         return jsonify({"message": "User deleted successfully"}), 200
 
     except Exception as e:
-        session.rollback()  # Annulla le modifiche in caso di errore
+        session.rollback()  # Undo changes in case of error
         return jsonify({"error": str(e)}), 500
 
     finally:
