@@ -1,7 +1,7 @@
-from sqlalchemy import Column, Integer, Float, String, ForeignKey, DateTime
+from sqlalchemy import Column, Integer, Float, String, ForeignKey, DateTime, event
 from sqlalchemy.orm import relationship
 from datetime import datetime
-from db_manager import Base
+from models.db_manager import Base, update_timestamp
 
 class Order(Base):
     __tablename__ = "orders"
@@ -36,3 +36,6 @@ class OrderDetails(Base):
 
     def __repr__(self):
         return f"<OrderDetails(id={self.id}, order_id={self.order_id}, product_id={self.product_id}, quantity={self.quantity}, price={self.price})>"
+
+# Create listener because SQLAlchemy doesn't support trigger directly
+event.listen(Order, "before_update", update_timestamp)

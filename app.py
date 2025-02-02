@@ -1,18 +1,18 @@
-from flask import Flask, render_template
-from flask import request
-from forms import LoginForm
-from flask_wtf import FlaskForm
-import sqlite3 as sql
+from flask import Flask
+from routes.users_routes import users_bp
+from routes.auth_routes import auth_bp
+
+from flask_jwt_extended import JWTManager
+import os
+
 app = Flask(__name__)
 app.config['WTF_CSRF_ENABLED'] = False
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "fallback_jwt_secret")
+
+jwt = JWTManager(app)
 @app.route('/')
 def index():
     return 'Hello World!'
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        return 'hello world'
-    else:
-        form = LoginForm()
-        return render_template('login.html', form=form)
+app.register_blueprint(users_bp)
+app.register_blueprint(auth_bp)
