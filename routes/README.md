@@ -1,25 +1,31 @@
 # Router API Documentation
 
-This document describes the **Router API**, detailing available endpoints, request formats, and expected responses.
+This document describes the **Router API**, detailing the available endpoints, request formats, and expected responses.
 
 ---
 
 ## Users API
 
 ### Get All Users
-#### Endpoint:  
+
+#### Endpoint:
+
 ```http
 GET /users
 ```
-#### Authentication:  
-- No authentication required.
+
+#### Authentication:
+
+- Not required.
 
 #### Request Example:
+
 ```bash
 curl -X GET http://127.0.0.1:5000/users
 ```
 
 #### Response Example (`200 OK`):
+
 ```json
 [
     {
@@ -42,165 +48,264 @@ curl -X GET http://127.0.0.1:5000/users
 ```
 
 #### Possible Errors
-| Status Code | Message | Description |
-|-------------|---------|-------------|
-| `500` | `"error": "Internal Server Error"` | Unexpected error on the server. |
+
+| Status Code | Message                          | Description                    |
+| ----------- | ---------------------------------- | ------------------------------ |
+| `500`       | `"error": "Internal Server Error"` | Unexpected server error. |
 
 ---
 
-### Create a New User
-#### Endpoint:  
+### Login
+
+#### Endpoint:
+
 ```http
-POST /users
+POST /login
 ```
-#### Authentication:  
-- Requires **JWT Authorization**.
-- Only **admin users** can create new users.
+
+#### Authentication:
+
+- Not required.
 
 #### Request Example:
+
 ```bash
-curl -X POST http://127.0.0.1:5000/users \
-     -H "Authorization: Bearer <TOKEN_USER>" \
+curl -X POST http://127.0.0.1:5000/login \
      -H "Content-Type: application/json" \
      -d '{
-         "email": "newuser@example.com",
-         "username": "newuser",
-         "firstname": "Mario",
-         "lastname": "Rossi",
-         "password": "newpassword"
+         "email": "user@example.com",
+         "password": "password123"
      }'
 ```
-#### Request Body (JSON)
-| Field | Type | Required | Description |
-|--------|------|----|-------------|
-| `email` | `string` | Yes | The email of the new user. Must be unique. |
-| `username` | `string` | Yes | The username for the new user. Must be unique. |
-| `firstname` | `string` | Yes | The first name of the user. |
-| `lastname` | `string` | Yes | The last name of the user. |
-| `password` | `string` | Yes | The password for authentication. |
-| `is_admin` | `boolean` | No | Defaults to `false`, only admin users can create admins. |
 
-#### Response Example (`201 Created`):
-```json
-{
-    "message": "User added"
-}
-```
-
-#### Possible Errors
-| Status Code | Message | Description |
-|-------------|---------|-------------|
-| `400` | `"message": "Required {field} are missing"` | A required field is missing. |
-| `401` | `"msg": "Missing Authorization Header"` | The request is missing the JWT token. |
-| `403` | `"error": "Access deny. Only admin can create users."` | The user is not an admin and cannot create users. |
-| `500` | `"error": "Internal Server Error"` | Unexpected error on the server. |
-
----
-
-### Update User
-#### Endpoint:  
-```http
-PUT /users/<id>
-```
-#### Request Example:
-```bash
-curl -X PUT http://127.0.0.1:5000/users/1 \
-     -H "Authorization: Bearer <TOKEN_ADMIN>" \
-     -H "Content-Type: application/json" \
-     -d '{
-         "firstname": "Updated Name",
-         "lastname": "Updated Lastname",
-         "username": "updatedusername",
-         "email": "updated@example.com"
-     }'
-```
 #### Response Example (`200 OK`):
+
 ```json
 {
-    "message": "User updated successfully"
+    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCIg..."
 }
 ```
 
 #### Possible Errors
+
 | Status Code | Message | Description |
-|-------------|---------|-------------|
-| `400` | `"error": "No data provided"` | No fields were provided for update. |
-| `403` | `"error": "Access denied. Only admins can modify users."` | The user is not an admin. |
-| `404` | `"error": "User not found"` | The user ID does not exist. |
-| `500` | `"error": "Internal Server Error"` | Unexpected error on the server. |
+| ------------------------------- | --------- | ----------- |
+| `401` | `"error": "Invalid credentials"` | Email or password incorrect. |
+| `500` | `"error": "Internal Server Error"` | Unexpected server error. |
 
 ---
 
-### Delete User
-#### Endpoint:  
+## Orders API
+
+### Get All Orders
+
+#### Endpoint:
+
 ```http
-DELETE /users/<id>
+GET /orders
 ```
+
+#### Authentication:
+
+- Requires **JWT Authorization**.
+- Only **admins** can access.
+
 #### Request Example:
+
 ```bash
-curl -X DELETE http://127.0.0.1:5000/users/1 \
+curl -X GET http://127.0.0.1:5000/orders \
      -H "Authorization: Bearer <TOKEN_ADMIN>"
 ```
+
 #### Response Example (`200 OK`):
+
 ```json
 {
-    "message": "User deleted successfully"
+    "total_orders": 150,
+    "order_status_counts": {
+        "pending": 50,
+        "shipped": 40,
+        "delivered": 50,
+        "cancelled": 10
+    },
+    "orders": [
+        {
+            "id": 1,
+            "user_id": 2,
+            "status": "pending",
+            "total_price": 99.99
+        }
+    ]
 }
 ```
 
+---
+
+### Get Orders by Status
+
+#### Endpoint:
+
+```http
+GET /orders/<status>
+```
+
+#### Request Example:
+
+```bash
+curl -X GET http://127.0.0.1:5000/orders/pending \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
+```
+
 #### Possible Errors
+
 | Status Code | Message | Description |
-|-------------|------------------------------------|-------------|
-| `403` | `"error": "Access denied. Only admins can delete users."` | The user is not an admin. |
-| `404` | `"error": "User not found"` | The user ID does not exist. |
-| `500` | `"error": "Internal Server Error"` | Unexpected error on the server. |
+| ----------- | -------------------------------------------------- | ------------------------------ |
+| `400`       | `"error": "Invalid status. Allowed values: [...]"` | Invalid status. |
+| `500`       | `"error": "Internal Server Error"`                 | Unexpected server error. |
 
 ---
 
-## Products API
+### Get Product Analytics
 
-### Get All Products
-#### Endpoint:  
+#### Endpoint:
+
 ```http
-GET /products
+GET /orders_details/<product_id>
 ```
-#### Authentication:  
-- No authentication required.
-
 #### Request Example:
+
 ```bash
-curl -X GET http://127.0.0.1:5000/products
+curl -X GET http://127.0.0.1:5000/orders_details/1 \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
 ```
 
 #### Response Example (`200 OK`):
+
+```json
+{
+    "product_id": 1,
+    "product_name": "Smartphone XYZ",
+    "total_orders": 120,
+    "total_revenue": 15000.75,
+    "average_revenue": 125.00
+}
+```
+
+---
+
+### Get Best Buyer
+
+#### Endpoint:
+
+```http
+GET /orders/best_buyer
+```
+
+#### Request Example:
+
+```bash
+curl -X GET http://127.0.0.1:5000/orders/best_buyer \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
+```
+
+#### Response Example (`200 OK`):
+
+```json
+{
+    "user_id": 5,
+    "email": "topbuyer@example.com",
+    "username": "topbuyer",
+    "firstname": "Alice",
+    "lastname": "Brown",
+    "total_orders": 50
+}
+```
+
+---
+
+### Get Orders per User
+
+#### Endpoint:
+
+```http
+GET /orders/user_orders
+```
+
+#### Request Example:
+
+```bash
+curl -X GET http://127.0.0.1:5000/orders/user_orders \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
+```
+
+#### Response Example (`200 OK`):
+
 ```json
 [
     {
-        "id": 1,
-        "name": "Product 1",
-        "description": "Description for Product 1",
-        "price": 50
-    },
-    {
-        "id": 2,
-        "name": "Product 2",
-        "description": "Description for Product 2",
-        "price": 51.5
+        "user_id": 2,
+        "username": "testuser",
+        "total_orders": 30
     }
 ]
 ```
 
-#### Possible Errors
-| Status Code | Message | Description |
-|-------------|---------|-------------|
-| `500` | `"error": "Internal Server Error"` | Unexpected error on the server. |
+---
+
+### Get Average Orders per User
+
+#### Endpoint:
+
+```http
+GET /orders/average_orders
+```
+
+#### Request Example:
+
+```bash
+curl -X GET http://127.0.0.1:5000/orders/average_orders \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
+```
+
+#### Response Example (`200 OK`):
+
+```json
+{
+    "average_orders_per_user": 5.2
+}
+```
+
+---
+
+### Get Revenue per Month
+
+#### Endpoint:
+
+```http
+GET /orders/month
+```
+#### Request Example:
+
+```bash
+curl -X GET http://127.0.0.1:5000/orders/month \
+     -H "Authorization: Bearer <TOKEN_ADMIN>"
+```
+
+#### Response Example (`200 OK`):
+
+```json
+[
+    {
+        "month": "2024-01",
+        "total_revenue": 12500.75
+    }
+]
+```
 
 ---
 
 ## Notes
-- **JWT Authentication:** All protected endpoints require a valid token. Ensure you include `Authorization: Bearer <TOKEN>` in the headers.
-- **Admin Restrictions:** Only admins can create, update, or delete users.
-- **Password Security:** Passwords are stored securely using bcrypt hashing.
 
----
-
+- **JWT Authentication:** Protected endpoints require a valid token in the format `Authorization: Bearer <TOKEN>`.
+- **Admin Restrictions:** Only administrators can access sensitive order information.
+- **Password Security:** Passwords are securely stored using bcrypt hashing.
